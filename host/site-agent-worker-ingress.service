@@ -1,0 +1,15 @@
+[Unit]
+Description=Source restriction for the dedicated site-agent SSH worker
+DefaultDependencies=no
+After=local-fs.target
+Before=network-pre.target snap.lxd.daemon.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/site-agent-worker/ingress.nft
+ExecReload=/usr/sbin/nft -f /etc/site-agent-worker/ingress.nft
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+name: Check Site-Agent starter
+on:
+  push:
+  pull_request:
+permissions: {}
+jobs:
+  offline:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      # Match the reviewed action pins in the organization's ign04-smoke-fixture.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13'
+      - name: Run dependency-free tests
+        run: PYTHONPATH=agent/src python -W error -m unittest discover -s agent/tests -v
+      - name: Check portable repository contents
+        run: python tools/check_repo.py

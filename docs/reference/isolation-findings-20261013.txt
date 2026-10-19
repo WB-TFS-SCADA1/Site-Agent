@@ -1,0 +1,113 @@
+IGN04-Site-Agent-Jail — independent isolation assessment
+Other exposure; no escape or privilege escalation demonstrated.
+2026-10-13 17:52:11–18:02:45 UTC (12:52:11–13:02:45 America/Chicago).
+
+The supplied account remained UID/EUID 1000 with primary and supplementary group 0. All completed remote tests used one persistent SSH session through the supplied Warpgate target. Its root identity and user, mount, PID, network, and cgroup namespace identifiers matched the starting values at cleanup. No stop condition was triggered.
+
+The most concrete exposure is that the shell account can read and write, according to ownership, mode and effective-access checks, the private key used by the worker's SSH server. No key contents were read, copied, disclosed, or used. This concerns the worker's service identity; it does not demonstrate access to Warpgate credentials or an enclosing system.
+
+Observed restrictions blocked the tested privilege and namespace operations. This is bounded evidence of containment for those operations, not proof that escape is impossible. Enclosing Docker/rootless runtime, LXD, underlying-host controls and their patch status were not independently assessed.
+
+TESTED SCOPE AND BOUNDARY EVIDENCE
+
+Connection: One persistent SSH session through the supplied Warpgate target. Credential and transport invocation omitted from this extract.
+
+Remote shell: /home/agent; shell PID 53, parent sshd PID 52. Starting identity: uid=1000(agent), gid=0(root), groups=0(root). The names in the login banner were treated as labels, not security evidence.
+
+Local controller work was limited to SSH transport, public primary documentation, and creating/redacting this evidence/report directory. No previous assessment results, local deployment configuration, administrator access, alternate credentials, or controller privileges were used to inspect or enter the target's enclosing systems.
+
+Mount evidence: read-only overlay root; separately mounted writable home/work/SSH-key volumes; read-only /workspace/ignProjects and /workspace/input. Mount roots contain an LXD container rootfs path and a rootless Docker data directory. Together with .dockerenv, remapped IDs and a rootlesskit label, these are consistent with a rootless Docker worker inside an LXD environment. This layered model is an inference, not an independently verified host configuration.
+
+Both UID and GID maps show 0 -> 23100 for one ID, then 1 -> 165536 for 65536 IDs. These map to the visible parent coordinate system; they do not establish final production-host identities or the privilege mode of every enclosing layer.
+
+PID 1 is tini running as UID 1000. All ten processes observed in B07 shared the checked namespaces and root. This does not identify the production host's PID 1. No process was attached to, signalled, stopped, or otherwise manipulated.
+
+Reference mount names and narrow read-only bindings suggest deliberately supplied data, but their authorized content scope was not provided. Directory metadata was inspected; project/input file contents were not read. Their scope remains unresolved, and their presence is not treated as an enclosing-root escape.
+
+FINDINGS AND SPECIFIC REMEDIATIONS
+
+F1 — Management interfaces / service identity: The account has effective access to the active SSH host private key
+
+Demonstrated capability: B09/B16/B17: /var/lib/site-agent-ssh is UID 1000, mode 0700 on a writable mount. ssh_host_ed25519_key is UID 1000, mode 0600; effective R_OK and W_OK both return true. The active /etc/ssh/sshd_config.worker names this exact HostKey. The listener also runs as UID 1000. Permission-based capability is demonstrated; actual key reading, rewriting, signing, or impersonation was intentionally not tested.
+
+Practical impact: A workload executing as agent is not separated from its SSH server's private identity. It could potentially copy or replace that identity and influence future service behavior. Successful impersonation would additionally require a network/connection position and a relying client's acceptance; neither was demonstrated. The key was not shown to be shared with another environment.
+
+Confidence: High for key ownership, access checks, active configuration, and shared service UID; conditional for impersonation or wider impact.
+
+Recommended remediation: Move SSH ingress and its private key outside the workload account's readable/writable domain, ideally to a separate service/sidecar with a distinct identity and independently controlled storage. Keep configuration and authorized keys immutable. Rotate this worker's host key after isolation is corrected, coordinating the trusted fingerprint update. Do not simply change permissions while leaving the same UID responsible for both workload and key use.
+
+Evidence: B07, B09, B16, B17
+
+F2 — Privilege: Group 0 grants broad group access, but tested privilege elevation was denied
+
+Demonstrated capability: UID 1000 has only group 0. It can inspect the root-group reference directories (mode 0750, owner 65534), while protected shadow/gshadow files and /root were inaccessible by permission checks. Effective, permitted, inheritable, ambient and bounding capabilities are zero; no_new_privs is 1. setuid(0), setgroups([]), chroot('/'), and raw ICMP socket creation returned EPERM. Four nonrecursive binary-directory inventories found setuid/setgid programs but no file capabilities or writable regular binaries in those inventories. sudo and several delegation/runtime helpers are absent.
+
+Practical impact: Root-group membership broadens access to any present or future group-0-readable objects exposed to the worker. It is not UID 0 and did not provide a demonstrated write or escape path. No elevation was obtained. Absence of sudo alone is not a security boundary; remaining setuid/setgid utilities are unnecessary attack surface if not required by the workload.
+
+Confidence: High for observed identity, selected permissions and syscall failures; limited to the tested paths and mechanisms.
+
+Recommended remediation: Use a dedicated workload UID/GID and explicit groups or ACLs for the intended references. Preserve zero capabilities and no_new_privs. Remove unnecessary privileged utilities when rebuilding the image. Review every newly exposed volume against the workload identity.
+
+Evidence: B01, B03, B04, B05, B19
+
+F3 — Filesystem: No alternate enclosing root was exposed by the checked paths
+
+Demonstrated capability: The root mount is reported read-only. /proc/self/root, /proc/1/root and /proc/1/root/.. all matched / at device/inode (78,11818011). Every visible process root checked in B07 matched it. /host, /hostfs, /run/host, /home/siteagent, and the exact enclosing-root path suggested by mount metadata returned ENOENT. Scratch relative symlink and '..' resolution stayed within the intended marker path. Direct execution succeeded in the home scratch directory and returned EACCES in /tmp.
+
+Practical impact: These checks found no enclosing filesystem view. Home and work remain writable as expected for job execution. Read-only reference mounts still expose their permitted contents; authorization for the complete contents was not independently established. A mount-source path disclosed by mountinfo is metadata, not proof that the path can be traversed.
+
+Confidence: High for tested metadata and scratch operations; no claim about untested paths, hidden mounts, or all symlinks.
+
+Recommended remediation: Retain the read-only root and narrow reference mounts; document a reviewed manifest of permitted reference content. Use dedicated data groups and per-job writable volumes. Retain noexec where useful, while recognizing that it does not itself prevent an interpreter from processing a readable script.
+
+Evidence: B03, B05, B06, B07, B18
+
+F4 — Process / namespace: Namespace operations were denied; the visible AppArmor profile is unconfined
+
+Demonstrated capability: All ten observed processes shared the worker's checked namespaces, root and UID 1000. unshare attempts for user, mount, PID, network, UTS and IPC namespaces, setns into the current mount/network namespaces, and a separate clone(CLONE_NEWUSER|SIGCHLD) attempt all returned EPERM. No tested operation changed namespace membership. Seccomp mode 2 with two filters is reported. AppArmor is enabled, but the current label is 'rootlesskit (unconfined)'. Global user-namespace creation is enabled; the worker's attempts nevertheless failed.
+
+Practical impact: Tested namespace entry/creation restrictions were effective, but the exact denial source cannot be attributed to seccomp versus other kernel checks from errno alone. No enforcing worker-specific AppArmor protection was demonstrated by this label. Sharing UID 1000 with the SSH service provides no Unix UID separation between the workload and service; process manipulation was prohibited and not attempted.
+
+Confidence: High for returned errors and namespace identities; moderate for the defense-in-depth gap, since enclosing LSM policies were not visible.
+
+Recommended remediation: Preserve the tested syscall and capability restrictions. Review and apply an enforcing, workload-specific AppArmor policy compatible with the rootless runtime, and independently verify enclosing LXD confinement. Separate service and workload identities. Keep kernel and runtime packages reviewed against vendor advisories.
+
+Evidence: B03, B07, B08, B19, B20, B21
+
+F5 — Management interfaces / devices: No checked orchestration-control socket or dangerous device was exposed
+
+Demonstrated capability: Twelve named Docker, containerd, Podman, LXD, D-Bus, systemd and log socket paths returned ENOENT. /proc/net/unix contained six unnamed sockets and no named control endpoint. The assessment shell's descriptors were its terminal; the Python child's stdin was the heredoc pipe. The disappearing self fd 3 was a normal enumeration race, not a denial. The bounded /dev listing showed terminal, memory-backed and standard character devices; no block device, /dev/mem, /dev/kvm or /dev/fuse appeared. /proc/kcore and several sensitive proc files were masked by /dev/null mounts.
+
+Practical impact: No management API control or raw-storage access was demonstrated. This does not rule out interfaces at untested paths/addresses or proxies outside this namespace. No management state-changing call, device read, container creation or host mount was attempted.
+
+Confidence: High for the enumerated paths, descriptors and complete small /dev listing; bounded for the wider interface surface.
+
+Recommended remediation: Keep orchestration sockets and host devices out of the worker. Maintain device filtering and proc masking. Review future bind mounts and forwarded descriptors against an explicit allowlist.
+
+Evidence: B03, B09
+
+F6 — Network: Limited connectivity results do not establish a complete egress policy
+
+Demonstrated capability: Four sequential TCP attempts were made: 127.0.0.1:2222 succeeded and returned the worker's SSH banner; observed default gateway 172.19.0.1:22 and :2375 refused connections (ECONNREFUSED); warp.wbinfra.com resolved through 127.0.0.11 to 52.249.58.243, and a connection to :2222 timed out after two seconds. No authentication or application request was sent to gateway endpoints. No subnet scan, unrelated destination or metadata-credential request occurred.
+
+Practical impact: Local SSH is reachable, and DNS resolution works. Refusal means the tested connection was actively rejected or had no listener; it does not prove an intended firewall rule. The Warpgate timeout cannot distinguish filtering, routing, hairpin behavior or service availability. Network reachability alone would not demonstrate container or jail escape.
+
+Confidence: High for these four observations; low for general allow/deny policy and actual enclosing-host reachability.
+
+Recommended remediation: Document the intended destination/port allowlist and enforce it outside the workload. Have the owner review redacted policy and packet-counter evidence, then repeat only an approved positive and negative canary test if enforcement needs confirmation. Treat network isolation separately from filesystem/namespace isolation.
+
+Evidence: B10, B11, B12, B13, B14
+
+F7 — Resource controls: CPU, memory and PID limits are configured; durable-storage, I/O and logging bounds remain unresolved
+
+Demonstrated capability: The read-only cgroup exposes cpu.max='50000 100000', cpuset.cpus.effective='0', memory.max=536870912, memory.swap.max=0, and pids.max=128. The snapshot showed approximately 18.3 MB memory.current, 10 processes and pids.events max=0. /tmp is 128 MiB, /dev/shm 16 MiB, and /dev 64 MiB. io.max is empty. RLIMIT_CPU, file size, core size and process count are unlimited; open files are capped at 1,048,576. Writable persistent mounts report a common filesystem capacity of 539,977,244,672 bytes; that is capacity, not a verified account quota. Daemon stdout/stderr point to pipes. Storage/inode quotas and outer log rotation/retention were not visible.
+
+Practical impact: The configured cgroup limits constrain the worker even where per-process rlimits are unlimited, but limit-hit behavior was not tested. No finite local io.max setting was exposed; ancestors may add limits. If persistent-storage or log bounds are absent in the enclosing environment, jobs could consume shared storage or I/O and affect other workloads; production co-location and actual outer quotas were not independently verified.
+
+Confidence: High for reported settings and filesystem capacity; unresolved for enforcement at limits, inherited controls, durable quotas, logging caps and production impact.
+
+Recommended remediation: Retain the finite CPU, memory, swap and PID limits. Configure or verify per-job byte/inode quotas and storage separation, I/O policy where required, and bounded runtime logging with rotation/retention. Review open-file/core/file-size limits against workload needs. Confirm inherited settings from owner-supplied redacted configuration; verify saturation behavior only in a disposable nonproduction replica.
+
+Interpretation: CPU quota 0.5 CPU; memory 512 MiB; swap 0; PID/task limit 128. These are configuration observations, not saturation tests. Reference: https://docs.kernel.org/admin-guide/cgroup-v2.html
+
+Evidence: B03, B15, B17

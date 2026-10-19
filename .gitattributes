@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.sh text eol=lf
+# These are historical sources whose recorded SHA-256 is over exact bytes.
+worker/** -text
+host/** -text
+docs/reference/deployment-handoff-20261013.txt -text
+docs/reference/hardening-baseline-20261013.json -text

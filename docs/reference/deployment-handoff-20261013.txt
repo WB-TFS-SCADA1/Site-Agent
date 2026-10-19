@@ -1,0 +1,117 @@
+IGN04 DEDICATED COMMISSIONING WORKSPACE — verified 2026-10-13
+
+READY
+Warpgate target: IGN04-Site-Agent-Jail
+Target ID: 3c9851ee-d1c3-47a6-be47-9baf71498e72
+Target endpoint: 10.20.1.4:22230, SSH account agent (UID 1000)
+Warpgate client entry point: warp.wbinfra.com:2222
+Access role: admin only. Tickets limited to 30 minutes and one connection.
+Worker hostname: ign04-site-agent-worker
+SSH host key: ED25519 SHA256:DtNoS65+046x68Bx+7zCJ0zV8l+epwrGErDZ7M9QIWA
+Warpgate target-side client key: client-ed25519, ID 4c62cbb7-988b-4a20-be5b-cd388386adb0
+
+CHANGES
+Created rootless Docker container site-agent-ssh-worker inside site-agent-jail.
+Image: site-agent-worker:ssh-20261013, derived from the existing
+site-agent-base:codex-sdk-0.156.1. Added OpenSSH, Git, Java, transfer/archive tools,
+and tools for subsequent lab preparation. No container-side Codex login needed.
+Jail build/Compose files: /opt/site-agent/ssh-worker-20261013
+Existing containers, images, job data and old Cunner volumes were preserved.
+
+Persistent Docker volumes inside the jail:
+  site-agent-worker-home     -> /home/agent
+  site-agent-worker-work     -> /workspace/work
+  site-agent-worker-hostkeys -> /var/lib/site-agent-ssh
+Read-only jail mounts:
+  /opt/site-agent/ignProjects -> /workspace/ignProjects
+  /home/siteagent/jobs/input -> /workspace/input
+  Warpgate public authorized key file -> /etc/ssh/authorized_keys/agent
+No API token, ticket, Docker socket or IGN04 host filesystem mount in the worker.
+
+Route:
+  Warpgate 10.20.0.20 -> IGN04 10.20.1.4:22230 -> LXD worker-ssh proxy
+  -> jail loopback 127.0.0.1:22230 -> Docker container TCP 2222.
+Added dedicated nft table inet site_agent_worker, accepting only source
+10.20.0.20 at that host address/port and dropping other sources there.
+Existing LXD rules were compared before/after and left unchanged.
+Host firewall file: /etc/site-agent-worker/ingress.nft
+Host unit: /etc/systemd/system/site-agent-worker-ingress.service
+LXD dependency drop-in:
+  /etc/systemd/system/snap.lxd.daemon.service.d/site-agent-worker-ingress.conf
+This makes LXD wait for the source guard at startup. A guard failure can therefore
+prevent LXD startup; troubleshoot that unit if LXD fails after a future reboot.
+No production SSH or Ignition restart was performed.
+
+VERIFICATION
+Actual fresh, single-use ticket logins through Warpgate succeeded.
+Remote command verified UID 1000, hostname ign04-site-agent-worker and marker
+IGN04-Site-Agent-Jail; command explicitly changed to /workspace/work.
+SSH normally starts in /home/agent. Docker WORKDIR alone does not change that.
+SFTP upload/download succeeded. Home/work files and host key survived recreation
+of only this worker. Test files removed. Other container IDs/states unchanged.
+Non-Warpgate source test was blocked; allowed/denied firewall counters increased.
+Root filesystem and input/project mounts read-only; no sudo access or sockets.
+Capability mask zero; NoNewPrivs=1; seccomp filtering enabled.
+Limits: 0.5 CPU, 512 MiB memory, no extra swap, 128 PIDs, /tmp 128 MiB.
+Detailed evidence: logs/ign04-worker-2026-10-13/verification.json and
+final-host-verification.txt in the local workspace.
+
+USING THE EXISTING LOCAL CLI AGENT
+The local CLI remains local. It must explicitly use SSH/SFTP for remote work.
+The supplied worker_client.py creates a single-use ticket, connects to this one
+target, runs the operation, and revokes the ticket. It never prints the ticket.
+It uses the existing trusted Warpgate key in ~/.ssh/known_hosts and rejects
+untrusted server keys. Supply a valid Warpgate API token through a protected
+--token-file, WARPGATE_API_TOKEN environment variable, or its hidden prompt.
+API token creation and user rights remain governed by Warpgate.
+
+Example local setup (from infrastructure/ign04-site-agent-jail):
+  python3 -m venv /tmp/site-agent-client-venv
+  /tmp/site-agent-client-venv/bin/pip install -r requirements.txt
+
+Example commands:
+  /tmp/site-agent-client-venv/bin/python worker_client.py --command 'id; pwd; hostname'
+  /tmp/site-agent-client-venv/bin/python worker_client.py --upload ./input.zip /workspace/work/input.zip
+  /tmp/site-agent-client-venv/bin/python worker_client.py --download /workspace/work/result.zip ./result.zip
+Commands begin in /workspace/work. Transfer destinations are explicit.
+Read /workspace/ignProjects/AGENTS.md before project work. Clone/copy the required
+project into writable work storage; do not attempt edits in the read-only mount.
+
+Alternatively, obtain a scoped ticket for this target from Warpgate and use:
+  ssh -p 2222 -l 'ticket-<ticket-secret>' warp.wbinfra.com 'cd /workspace/work && id && pwd'
+  sftp -P 2222 -o 'User=ticket-<ticket-secret>' warp.wbinfra.com
+The ticket is the SSH username credential; a dummy password such as "ticket"
+works for the SSH password challenge. Use a new ticket for each connection.
+Avoid recording ticket secrets in scripts, history, reports or logs.
+
+RESTART / RECONNECT
+Jail boot.autostart is now true. siteagent linger is enabled and its rootless
+docker.service is enabled. Worker restart policy is unless-stopped.
+The source guard is enabled and required before LXD starts.
+Startup configuration was inspected; no production host/jail reboot was performed.
+After a normal host/jail restart, reconnect using a fresh ticket as above.
+If the worker was manually stopped, an IGN04 administrator can run:
+  sudo /snap/bin/lxc start site-agent-jail
+  [Only when the jail is stopped; allow rootless Docker time to initialize.]
+Then inside the jail:
+  cd /opt/site-agent/ssh-worker-20261013
+  runuser -u siteagent -- env -u DOCKER_CONTEXT -u DOCKER_API_VERSION DOCKER_HOST=unix:///run/user/23100/docker.sock XDG_RUNTIME_DIR=/run/user/23100 docker compose up -d --no-build
+Do not change production SSH, restart Ignition, or use docker compose down -v.
+
+ISOLATION LIMITS / REMAINING WORK
+This is a constrained workspace, not a guarantee against escape or host harm.
+LXD and Docker share IGN04's kernel. The jail is unprivileged and Docker rootless,
+but kernel/runtime vulnerabilities remain possible. Storage has NO per-worker
+quota: filling persistent volumes can pressure shared storage. Logs are bounded.
+The existing jail network blocks private destination ranges and allows public
+HTTP/HTTPS plus infrastructure DNS/DHCP. It is not an air gap; public endpoints
+and data exfiltration are not universally prevented. No production IPC was tested.
+CPU/memory/PID limits constrain this worker, not all existing jail containers.
+The worker has no SSH forwarding, but an allowed shell can still run programs;
+network policy, mounts and permissions determine their actual reach.
+A separate VM provides a stronger boundary if hostile/untrusted workloads are
+expected. Native Ignition lab execution has not been validated in this worker.
+Ticket expiry/revocation is not proven to kill active sessions/background jobs.
+Do not treat ticket expiry or the client's local timeout as a job kill switch.
+No Cunner inputs, commissioning workflow, production deployment or WAVE merge
+was performed as part of this setup. Infrastructure has no remaining blocker.

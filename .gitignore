@@ -1,0 +1,47 @@
+# Credentials and local authentication state
+.env
+.env.*
+!.env.example
+auth.json
+authorized_keys
+known_hosts
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+ssh_host_*
+.codex/
+.aws/
+.ssh/
+
+# Private site inputs, generated artifacts and runtime state
+inputs/
+outputs/
+jobs/
+logs/
+private/
+*.gwbk
+*.zip
+*.tar
+*.gz
+*.bin
+*.sqlite
+*.db
+*.jsonl
+
+# Development products
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

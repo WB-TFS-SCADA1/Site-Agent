@@ -1,0 +1,17 @@
+{
+  "captured_utc": "2026-10-13T18:25:42.262254+00:00",
+  "kind": "local deployment sources only; live state not yet revalidated",
+  "live_changes": false,
+  "files": {
+    "HANDOFF.txt": "a32da3627a74174d0cdb789a41503c54f481bab6955f4791a3cfe4688386e39a",
+    "Dockerfile": "565a199106f4b1c30dfc98c924d6eae3caba11d819cbe3813628a824b5e36697",
+    "compose.yaml": "1f141421e7ceb53dc7530376c6173985e241af8826c70a4b3082b5e8c9368ecd",
+    "entrypoint.sh": "d6e4fe157e8209b2bab52f586ca79baf63122df24f8989f1654756bfbb1f9d13",
+    "sshd_config": "22c831efaf90a4ddaec10003479f8c18a35abaafc82cf9f833112077dc6f3114",
+    "ingress.nft": "3986477b83dcdb029a290a2cea725467d1906d5e27782b884fb40cf8e025050e",
+    "site-agent-worker-ingress.service": "7b775b35b7ffae13cbefc6d85275089dcf81f643a18a1fb5415a7d836714f6b5",
+    "lxd-ingress-dependency.conf": "2e21ddb07a56030039baf6c167ae5be0bf3d7dd5e82e56de25e8584dd315d37b",
+    "worker_client.py": "27faae2130f5618ab2d025eb805bd8d015c15a8e8d883261809f53eef91c35bd",
+    "requirements.txt": "dcc4118fe907b4621aa27787b6c5d07d974a4f2376ddc04dc93a93c56ec0036d"
+  }
+}

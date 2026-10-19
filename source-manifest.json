@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "prepared_on": "2026-10-19",
+  "source_workspace": "Ignition Development",
+  "live_server_revalidated": false,
+  "files": [
+    {
+      "source": "infrastructure/ign04-site-agent-jail/Dockerfile",
+      "destination": "worker/Dockerfile",
+      "source_sha256": "565a199106f4b1c30dfc98c924d6eae3caba11d819cbe3813628a824b5e36697",
+      "copied_sha256": "565a199106f4b1c30dfc98c924d6eae3caba11d819cbe3813628a824b5e36697",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/compose.yaml",
+      "destination": "worker/compose.yaml",
+      "source_sha256": "1f141421e7ceb53dc7530376c6173985e241af8826c70a4b3082b5e8c9368ecd",
+      "copied_sha256": "1f141421e7ceb53dc7530376c6173985e241af8826c70a4b3082b5e8c9368ecd",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/entrypoint.sh",
+      "destination": "worker/entrypoint.sh",
+      "source_sha256": "d6e4fe157e8209b2bab52f586ca79baf63122df24f8989f1654756bfbb1f9d13",
+      "copied_sha256": "d6e4fe157e8209b2bab52f586ca79baf63122df24f8989f1654756bfbb1f9d13",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/sshd_config",
+      "destination": "worker/sshd_config",
+      "source_sha256": "22c831efaf90a4ddaec10003479f8c18a35abaafc82cf9f833112077dc6f3114",
+      "copied_sha256": "22c831efaf90a4ddaec10003479f8c18a35abaafc82cf9f833112077dc6f3114",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/ingress.nft",
+      "destination": "host/ingress.nft",
+      "source_sha256": "3986477b83dcdb029a290a2cea725467d1906d5e27782b884fb40cf8e025050e",
+      "copied_sha256": "3986477b83dcdb029a290a2cea725467d1906d5e27782b884fb40cf8e025050e",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/site-agent-worker-ingress.service",
+      "destination": "host/site-agent-worker-ingress.service",
+      "source_sha256": "7b775b35b7ffae13cbefc6d85275089dcf81f643a18a1fb5415a7d836714f6b5",
+      "copied_sha256": "7b775b35b7ffae13cbefc6d85275089dcf81f643a18a1fb5415a7d836714f6b5",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/lxd-ingress-dependency.conf",
+      "destination": "host/lxd-ingress-dependency.conf",
+      "source_sha256": "2e21ddb07a56030039baf6c167ae5be0bf3d7dd5e82e56de25e8584dd315d37b",
+      "copied_sha256": "2e21ddb07a56030039baf6c167ae5be0bf3d7dd5e82e56de25e8584dd315d37b",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/requirements.txt",
+      "destination": "client/requirements.txt",
+      "source_sha256": "dcc4118fe907b4621aa27787b6c5d07d974a4f2376ddc04dc93a93c56ec0036d",
+      "copied_sha256": "dcc4118fe907b4621aa27787b6c5d07d974a4f2376ddc04dc93a93c56ec0036d",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/worker_client.py",
+      "destination": "client/worker_client.py",
+      "source_sha256": "27faae2130f5618ab2d025eb805bd8d015c15a8e8d883261809f53eef91c35bd",
+      "copied_sha256": "2d4e988dd8999b903184ea40943c366084b80d028af27db1acd86a66d03d049d",
+      "transformation": "Removed personal username; added explicit identity/origin/target/host-trust options; validate transfer path before connecting; suppress exception details."
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/HANDOFF.txt",
+      "destination": "docs/reference/deployment-handoff-20261013.txt",
+      "source_sha256": "a32da3627a74174d0cdb789a41503c54f481bab6955f4791a3cfe4688386e39a",
+      "copied_sha256": "a32da3627a74174d0cdb789a41503c54f481bab6955f4791a3cfe4688386e39a",
+      "transformation": "none"
+    },
+    {
+      "source": "infrastructure/ign04-site-agent-jail/hardening-20261013/local-baseline-manifest.json",
+      "destination": "docs/reference/hardening-baseline-20261013.json",
+      "source_sha256": "629a0334a1b0658d413cda6703bfbc03b60966a54dfa559265e334eec98be1bd",
+      "copied_sha256": "629a0334a1b0658d413cda6703bfbc03b60966a54dfa559265e334eec98be1bd",
+      "transformation": "none"
+    },
+    {
+      "source": "docs/Agentic-Site-Commissioning.md",
+      "destination": "docs/reference/commissioning-design-20260923.md",
+      "source_sha256": "dee08b2afb737a508a2d91fa68fc473e679f3600ce96f4b5af71182489292aff",
+      "copied_sha256": "2c4003ee86579752e495727ba63aa2af8c8fac504e636a701450f0712a5c0769",
+      "transformation": "Added historical-status banner; redirected unavailable relative dependencies while preserving their source paths."
+    },
+    {
+      "source": "isolation-assessment-20261013T172031Z/report.txt",
+      "destination": "docs/reference/isolation-findings-20261013.txt",
+      "source_sha256": "3f62b880049a77efda2b87b054c251032f790f548b7ea2f71d625bc76ed258e8",
+      "copied_sha256": "68875cc8e10fd38adf81b6c6911b87ef9925578f796936b2a809d12e661980be",
+      "transformation": "Findings-only extract; raw evidence appendix excluded; connection invocation omitted. No private key content was read in the assessment. Trailing blank line normalized."
+    }
+  ],
+  "reference_repositories": [
+    {
+      "url": "https://github.com/WB-TFS-SCADA1/ign04-smoke-fixture",
+      "local_commit": "b200c4b5d6199303d49207a35fd88e5b1ec372d9",
+      "reuse": "Testing conventions and pinned checkout/setup-python action versions; no application source or deployment workflow copied."
+    }
+  ]
+}

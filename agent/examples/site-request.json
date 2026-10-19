@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "job_type": "clone_site_artifacts",
+  "donor_site": "ExampleDonor",
+  "target_site": "ExampleDestination",
+  "donor_backup_ref": "synthetic-backup-reference",
+  "ipc_address": "192.0.2.20",
+  "plc_address": "192.0.2.21",
+  "changes": ["Retain the donor equipment inventory; update destination identities."]
+}

@@ -1,0 +1,50 @@
+name: site-agent-worker
+services:
+  worker:
+    image: site-agent-worker:ssh-20261013
+    pull_policy: never
+    container_name: site-agent-ssh-worker
+    hostname: ign04-site-agent-worker
+    user: "1000:0"
+    working_dir: /workspace/work
+    read_only: true
+    privileged: false
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    cpus: 0.50
+    mem_limit: 512m
+    memswap_limit: 512m
+    pids_limit: 128
+    shm_size: 16m
+    restart: unless-stopped
+    stop_grace_period: 10s
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=128m,mode=1777
+    ports:
+      - "127.0.0.1:22230:2222"
+    environment:
+      HOME: /home/agent
+      TMPDIR: /tmp
+    volumes:
+      - worker-home:/home/agent
+      - worker-work:/workspace/work
+      - worker-hostkeys:/var/lib/site-agent-ssh
+      - ./authorized_keys:/etc/ssh/authorized_keys/agent:ro
+      - /opt/site-agent/ignProjects:/workspace/ignProjects:ro
+      - /home/siteagent/jobs/input:/workspace/input:ro
+    networks: [worker-bridge]
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  worker-home:
+    name: site-agent-worker-home
+  worker-work:
+    name: site-agent-worker-work
+  worker-hostkeys:
+    name: site-agent-worker-hostkeys
+networks:
+  worker-bridge:
+    name: site-agent-worker-net

@@ -1,0 +1,5 @@
+add table inet site_agent_worker
+flush table inet site_agent_worker
+add chain inet site_agent_worker ingress { type filter hook input priority -20; policy accept; }
+add rule inet site_agent_worker ingress ip daddr 10.20.1.4 tcp dport 22230 ip saddr 10.20.0.20 counter accept comment "Warpgate to commissioning worker"
+add rule inet site_agent_worker ingress ip daddr 10.20.1.4 tcp dport 22230 counter drop comment "Restrict dedicated worker listener"
